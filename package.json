@@ -4,6 +4,7 @@
   "displayName": "Inspector Tools",
   "description": "A collection of tools for making the workflow in the inspector easier.",
   "unity": "2022.0",
+  "category": "tool",
   "author": {
     "name": "Tom Jerbo",
     "email": "tomjerbo@gmail.com",
