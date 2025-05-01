@@ -1,0 +1,12 @@
+{
+  "name": "com.Jerbo.Inspector",
+  "version": "0.1.0",
+  "displayName": "Inspector Tools",
+  "description": "A collection of tools for making the workflow in the inspector easier.",
+  "unity": "2022.0",
+  "author": {
+    "name": "Tom Jerbo",
+    "email": "tomjerbo@gmail.com",
+    "url": "https://github.com/tomjerbo"
+  }
+}
