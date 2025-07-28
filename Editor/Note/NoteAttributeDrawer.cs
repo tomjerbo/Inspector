@@ -6,21 +6,23 @@ namespace Jerbo.Inspector
     [CustomPropertyDrawer(typeof(NoteAttribute))]
     public class NoteAttributeDrawer : DecoratorDrawer
     {
-        GUIStyle style = new GUIStyle(EditorStyles.helpBox);
+        GUIStyle style = new (EditorStyles.helpBox);
         public override void OnGUI(Rect position)
         {
-            if(style ==null) style = new GUIStyle(EditorStyles.helpBox);
+            style ??= new GUIStyle(EditorStyles.helpBox);
             
-            NoteAttribute noteAttribute = attribute as NoteAttribute;      
-           
-            GUIContent content = new GUIContent(noteAttribute.noteText);       
+            NoteAttribute noteAttribute = attribute as NoteAttribute;
+            if (noteAttribute == null)
+                return;
+            
+            GUIContent content = new (noteAttribute.noteText);
             
             switch (noteAttribute.noteType)
             {
-                case NoteAttribute.NoteType.Info:
+                case NoteType.Info:
                     content = EditorGUIUtility.IconContent("console.infoicon", noteAttribute.noteText);
                     break;
-                case NoteAttribute.NoteType.Warning:
+                case NoteType.Warning:
                     content = EditorGUIUtility.IconContent("console.warnicon", noteAttribute.noteText);
                     break;
             }       
@@ -31,7 +33,7 @@ namespace Jerbo.Inspector
     
         public override float GetHeight()
         {
-            var helpBoxAttribute = attribute as NoteAttribute;
+            NoteAttribute helpBoxAttribute = attribute as NoteAttribute;
             if (helpBoxAttribute == null) return base.GetHeight();
             if (style == null) style = new GUIStyle(EditorStyles.helpBox);
             style.richText = true;
