@@ -1,8 +1,8 @@
 {
   "name": "com.jerbo.inspector",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "displayName": "Inspector Tools",
-  "description": "A collection of tools for making the workflow in the inspector easier.",
+  "description": "A collection of tools for making the workflow in the inspector better.",
   "unity": "2022.0",
   "category": "tool",
   "author": {
