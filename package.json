@@ -5,6 +5,7 @@
   "description": "A collection of tools for making the workflow in the inspector better.",
   "unity": "2022.0",
   "category": "tool",
+  "licence": "MIT",
   "author": {
     "name": "Tom Jerbo",
     "email": "tomjerbo@gmail.com",
