@@ -2,10 +2,11 @@
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+Object = UnityEngine.Object;
 
 namespace Jerbo.Inspector
 {
-    [CustomEditor(typeof(MonoBehaviour), true)]
+    [CustomEditor(typeof(Object), true)]
     public class ButtonAttributeDrawer : Editor
     {
         BindingFlags BINDING_FLAGS = BindingFlags.Default | 
@@ -17,10 +18,10 @@ namespace Jerbo.Inspector
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
-            MonoBehaviour mono = (MonoBehaviour)target;
-            if (mono == null) return;
+            Object buttonTarget = (Object)target;
+            if (buttonTarget == null) return;
 
-            MethodInfo[] methods = mono.GetType().GetMethods(BINDING_FLAGS);
+            MethodInfo[] methods = buttonTarget.GetType().GetMethods(BINDING_FLAGS);
             
             foreach (MethodInfo method in methods)
             {
@@ -33,7 +34,7 @@ namespace Jerbo.Inspector
                 GUILayout.Space(4);
                 if (GUILayout.Button(displayText, GUILayout.Height((float)buttonAttribute.buttonSize)))
                 {
-                    method.Invoke(mono, null);
+                    method.Invoke(buttonTarget, null);
                 }
             }
         }
