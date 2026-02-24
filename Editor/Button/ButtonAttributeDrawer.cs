@@ -2,7 +2,8 @@
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-Object = UnityEngine.Object;
+using Object = UnityEngine.Object;
+
 
 namespace Jerbo.Inspector
 {

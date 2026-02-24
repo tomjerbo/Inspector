@@ -103,5 +103,39 @@ namespace Jerbo.Inspector
         
         #endregion
 
+        static readonly Vector3[] arrow_gizmo = new Vector3[7];
+        public static void draw_gizmo_arrow_flat(Vector3 start, Vector3 end, Color color) {
+            /*
+             *           5
+             *			 |\
+             *			 |  \
+             * 0 - - - - 6	  \
+             * | <-start, end-> * 4   --> forward
+             * 1 - - - - 2	  /		  |
+             *			 |  /		  v Right
+             *			 |/
+             *			 3
+             */
+            float distance = Vector3.Distance(start.NoY(), end.NoY());
+            Vector3 dir_arrow = (end - start).normalized;
+            float width = distance * 0.2f;
+            float half_width = width;
+            Vector3 right = Vector3.Cross(dir_arrow, Vector3.up);
+
+            arrow_gizmo[0] = start - right * (half_width * 0.5f); // starting point is in the middle of the line between 0 & 1, the width of that part is half of the full width
+            arrow_gizmo[1] = arrow_gizmo[0] + right * half_width;
+            arrow_gizmo[2] = arrow_gizmo[1] + dir_arrow * distance - dir_arrow * (distance * 0.35f);
+            arrow_gizmo[3] = arrow_gizmo[2] + right * half_width;
+            arrow_gizmo[4] = end;
+            arrow_gizmo[5] = arrow_gizmo[3] - right * width * 3f;
+            arrow_gizmo[6] = arrow_gizmo[5] + right * half_width;
+
+		
+            Matrix4x4 matrix = Gizmos.matrix;
+            Gizmos.matrix = Matrix4x4.identity;
+            Gizmos.color = color;
+            Gizmos.DrawLineStrip(arrow_gizmo, true);
+            Gizmos.matrix = matrix;
+        }
     }
 }
