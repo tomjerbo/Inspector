@@ -10,6 +10,7 @@ namespace Jerbo.Inspector {
         ShowIf target;
         Token[] cachedTokens;
         Result parseResult;
+        bool is_visible;
         
 
         enum Result {
@@ -19,7 +20,10 @@ namespace Jerbo.Inspector {
             InvalidComparisson,
             InvalidType,
         }
-        
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
+            return is_visible ? base.GetPropertyHeight(property, label) : 0f;
+        }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             target = attribute as ShowIf;
@@ -27,21 +31,21 @@ namespace Jerbo.Inspector {
                 return;
             }
 
-            bool isVisible = true;
+            
             if (parseResult == Result.NotParsed) {
-                parseResult = ParseArgumentString(target.argument, property, out isVisible);
+                parseResult = ParseArgumentString(target.argument, property, out is_visible);
                 if (parseResult != Result.Ok) {
                     Debug.Log($"Parsing failed! {parseResult}");
                 }
             }
             else if (parseResult == Result.Ok) {
-                Result result = EvaluateTokens(cachedTokens, property, out isVisible);
+                Result result = EvaluateTokens(cachedTokens, property, out is_visible);
                 if (result != Result.Ok) {
                     Debug.LogError("Failed to EvaluateTokens: " + result);
                 }
             }
 
-            if (isVisible) {
+            if (is_visible) {
                 EditorGUI.PropertyField(position, property, label);
             }
         }
