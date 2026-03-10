@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/tomjerbo/Inspector/compare/v1.0.2...v1.0.3) (2026-03-10)
+
+
+### Bug Fixes
+
+* jk it didnt work ([2466eac](https://github.com/tomjerbo/Inspector/commit/2466eacef46443f72b26a409f99a9de6445631f9))
+
 ## [1.0.2](https://github.com/tomjerbo/Inspector/compare/v1.0.1...v1.0.2) (2026-03-10)
 
 
