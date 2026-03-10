@@ -7,12 +7,11 @@ namespace Jerbo.Inspector {
     public class ShowIfDrawer : PropertyDrawer {
 
         const char ARGUMENT_SPLIT_CHARACTER = ' ';
-        readonly ShowIf target;
+        ShowIf target;
         Token[] cached_tokens;
         Result parse_result;
         bool is_visible;
         
-
         enum Result {
             NotParsed,
             Ok,
@@ -20,16 +19,18 @@ namespace Jerbo.Inspector {
             InvalidComparisson,
             InvalidType,
         }
-
-        public ShowIfDrawer() {
-            target = attribute as ShowIf;
-        }
+        
         
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
             return is_visible ? base.GetPropertyHeight(property, label) : 0f;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+            target = attribute as ShowIf;
+            if (target == null) {
+                return;
+            }
+            
             if (parse_result == Result.NotParsed) {
                 parse_result = parse_argument_string(target.argument, property, out is_visible);
                 if (parse_result != Result.Ok) {
