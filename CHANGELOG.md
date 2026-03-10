@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/tomjerbo/Inspector/compare/v1.0.1...v1.0.2) (2026-03-10)
+
+
+### Bug Fixes
+
+* snake_case and not setting target each call ([432c7fe](https://github.com/tomjerbo/Inspector/commit/432c7fed1fc194e927ba4e852e4d21281dfa84ea))
+
 ## [1.0.1](https://github.com/tomjerbo/Inspector/compare/v1.0.0...v1.0.1) (2026-01-13)
 
 
