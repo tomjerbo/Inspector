@@ -7,7 +7,8 @@ namespace Jerbo.Inspector {
         readonly Color editorTintColor = new Color32(255,255,255, 56);
         
         const int TAB_HEIGHT = 18;
-        const int TAB_THICKNESS = 2;
+        const int HIGHLIGHT_THICKNESS = 2;
+        const int STRIPE_THICKNESS = 5;
         const int TAB_X_OFFSET = 10;
         
         const int TAB_PADDING_ABOVE = 24;
@@ -40,10 +41,10 @@ namespace Jerbo.Inspector {
             float fullWidth = rect.width;
 
 
-            // Tab Icon
+            // Highlight
             Vector2 rectPos = new (xPos - TEXT_PADDING_WIDTH, yPos);
-            Rect tabVertRect = new (rectPos.x, rectPos.y, TAB_THICKNESS, TAB_HEIGHT);
-            Rect tabHorRect = new (rectPos.x, tabVertRect.yMax, TEXT_PADDING_WIDTH + TEXT_PADDING_WIDTH + titleWidth, TAB_THICKNESS);
+            Rect tabVertRect = new (rectPos.x, rectPos.y, HIGHLIGHT_THICKNESS, TAB_HEIGHT);
+            Rect tabHorRect = new (rectPos.x, tabVertRect.yMax, TEXT_PADDING_WIDTH + TEXT_PADDING_WIDTH + titleWidth, HIGHLIGHT_THICKNESS);
             
             EditorGUI.DrawRect(tabVertRect, tabProperty.color);
             EditorGUI.DrawRect(tabHorRect, tabProperty.color);
@@ -54,11 +55,15 @@ namespace Jerbo.Inspector {
             EditorGUI.LabelField(textTitleRect, titleContent, headerStyle);
 
 
-            // Accent stripe
-            Rect slimStripe = new (tabHorRect);
-            slimStripe.x += tabHorRect.width + TEXT_PADDING_WIDTH;
-            slimStripe.width = fullWidth - titleWidth + TEXT_PADDING_WIDTH;
-            EditorGUI.DrawRect(slimStripe, tabProperty.color * editorTintColor);
+            // Stripe
+            Rect accent_stripe = new (tabHorRect);
+            accent_stripe.x += tabHorRect.width + TEXT_PADDING_WIDTH;
+            accent_stripe.height = STRIPE_THICKNESS;
+            accent_stripe.width = fullWidth - titleWidth + TEXT_PADDING_WIDTH;
+            EditorGUI.DrawRect(accent_stripe, tabProperty.color * editorTintColor);
+            
+            
+
         }
     }
 }
