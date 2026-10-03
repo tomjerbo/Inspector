@@ -66,7 +66,7 @@ public class FindWorkEditor : Editor {
     
     
     void draw_work_fields(FindWork.Work_Reference work_ref) {
-        if (find_work.display_setting != all && find_work.display_setting != work_ref.work_status) {
+        if (work_ref.was_removed || (find_work.display_setting != all && find_work.display_setting != work_ref.work_status)) {
             return;
         }
         
@@ -85,12 +85,13 @@ public class FindWorkEditor : Editor {
         Rect rect_info      = vertical_group[2];
         Rect rect_progress  = progress_and_object[0];
 
-        Rect highlight = rect_full.extend_left(8);
-        highlight.width = 2;
-        EditorGUI.DrawRect(highlight.trim_top(rect_name.height + Styles.spacing + 2), (is_marked_completed ? Styles.green : Styles.blue) * 0.35f);
-        EditorGUI.DrawRect(highlight.trim_bottom(rect_full.height - (rect_name.height + Styles.spacing) + 2), (is_marked_completed ? Styles.green : Styles.blue) * 0.5f);
+        if (work_ref.was_restored_from_cache) {
+            EditorGUI.DrawRect(rect_full.reduce(-3), Color.yellowNice);
+            EditorGUI.DrawRect(rect_full.reduce(-2), new Color(0.22f,0.22f,0.22f));
+        }
         
-        
+
+        draw_highlight(ref rect_full, rect_name.height, is_marked_completed);
         draw_name(rect_name, ref work_ref);
         draw_progress(rect_progress, ref work_ref);
         
@@ -98,6 +99,17 @@ public class FindWorkEditor : Editor {
         draw_info_text(rect_info, ref work_ref);
         draw_object_field(rect_object, find_work.work_type_object, ref work_ref);
         set_gui_on();
+
+    }
+
+    void draw_highlight(ref Rect rect_full, float name_rect_height, bool is_marked_completed) {
+        Rect highlight_rect = rect_full.extend_left(8);
+        highlight_rect.width = 2;
+        float highlight_spacing = 2f;
+        
+        Color color = is_marked_completed ? Styles.green : Styles.blue;
+        EditorGUI.DrawRect(highlight_rect.trim_top(name_rect_height + Styles.spacing + highlight_spacing), color * 0.35f);
+        EditorGUI.DrawRect(highlight_rect.trim_bottom(rect_full.height - (name_rect_height + Styles.spacing) + highlight_spacing), color * 0.5f);
     }
 
 

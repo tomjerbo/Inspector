@@ -8,6 +8,17 @@ using UnityEngine.Events;
 using Object = UnityEngine.Object;
 using static FindWork.Field_Type;
 
+
+/*
+ * TODO
+ * find recursive through all structures?
+ * set values on fields
+ * add support for undo
+ * 
+ */
+
+
+
 public class Work<T> : MonoBehaviour {
     [SerializeField] public Object type_to_find;
     public Type work_type_object => typeof(T);
@@ -28,8 +39,7 @@ public class FindWork : Work<ScriptableObject> {
     
     [SerializeField] public Work_Status display_setting;
     [SerializeField] public List<Work_Reference> references = new (32);
-    
-    
+
     
     HashSet<Component> visited_comps = new ();
     HashSet<FieldInfo> visited_fields = new ();
@@ -42,7 +52,10 @@ public class FindWork : Work<ScriptableObject> {
         public Field_Type field_type;
         public string field_name;
         public int event_index;
-        
+
+        public bool exists;
+        public bool was_removed;
+        public bool was_restored_from_cache;
         public Work_Status work_status;
         public string description;
     }
@@ -63,7 +76,7 @@ public class FindWork : Work<ScriptableObject> {
 
     
 
-    [Button]
+    [ContextMenu("Name children")]
     void name_all_children() {
         rename_children(transform, 0);
     }
@@ -74,12 +87,19 @@ public class FindWork : Work<ScriptableObject> {
 
     [Button]
     public void find_refs() {
-        visited_comps.Clear();
-        visited_fields.Clear();
-        children_to_search.Clear();
-
+        /*
+         * is it still there? found = false
+         * found -> default
+         * not found -> was_removed
+         *
+         * found + was_removed -> restored_from_cache
+         * 
+         */
         
-        // add found into new list, compare with old, remove deleted fields
+        // gets marked as existing inside 'has_seen'
+        for (int idx = 0; idx < references.Count; idx++) {
+            references[idx].exists = false;
+        }
         
         children_to_search.Enqueue(transform);
         do {
@@ -87,6 +107,23 @@ public class FindWork : Work<ScriptableObject> {
             scan_object(scan_target, work_type_object, work_type_array, work_type_list);
             append_children_without_component(children_to_search, scan_target, GetType());
         } while (children_to_search.Count > 0);
+        
+        for (int idx = 0; idx < references.Count; idx++) {
+            if (references[idx].exists == false) {
+                references[idx].was_removed = true;
+                references[idx].was_restored_from_cache = false;
+                continue;
+            }
+            
+            if (references[idx].exists && references[idx].was_removed) {
+                references[idx].was_removed = false;
+                references[idx].was_restored_from_cache = true;
+            }
+        }
+        
+        visited_comps.Clear();
+        visited_fields.Clear();
+        children_to_search.Clear();
     }
     
     void rename_children(Transform parent, int char_idx) {
@@ -114,6 +151,7 @@ public class FindWork : Work<ScriptableObject> {
                 && references[idx].event_index == event_index
                 && references[idx].field_type == field_type) 
             {
+                references[idx].exists = true;
                 return true;
             }
         }
@@ -129,7 +167,8 @@ public class FindWork : Work<ScriptableObject> {
                 on_component = comp,
                 field_name = $"{info.Name}",
                 field_type = field_type,
-                event_index = event_index
+                event_index = event_index,
+                exists = false,
             });
         }
     }
@@ -191,21 +230,16 @@ public class FindWork : Work<ScriptableObject> {
                             add_reference(target, comp, field_info, unity_event_target, idx);
                         }
                         else {
-                            // PersistenCall always have a valid ArgumentCache -> m_Arguments object
-                            FieldInfo argument_cache_field = element_type.GetField("m_Arguments", binding_flags);
-                            object argument_cache = argument_cache_field.GetValue(element);
-                            if (argument_cache == null) {
-                                continue;
-                            }
-                            
-                            FieldInfo arg_value_field = argument_cache_field.FieldType.GetField("m_ObjectArgument", binding_flags);
-                            if (arg_value_field == null) {
-                                continue;
-                            }
-                            Object arg_value = (Object)arg_value_field.GetValue(argument_cache);
-                            
-                            if (arg_value != null && arg_value.GetType() == work_type_object) {
-                                add_reference(target, comp, field_info, unity_event_value, idx);
+                            // look at targets method input type
+                            FieldInfo target_method_name_field = element_type.GetField("m_MethodName", binding_flags);
+                            string method_name = (string)target_method_name_field.GetValue(element);
+                            if (string.IsNullOrEmpty(method_name) == false) {
+                                MethodInfo target_method = target_value.GetType().GetMethod(method_name, binding_flags);
+                                ParameterInfo[] parameters = target_method.GetParameters();
+                                
+                                if (parameters.Length == 1 && parameters[0].ParameterType == work_type_object) {
+                                    add_reference(target, comp, field_info, unity_event_value, idx);
+                                }
                             }
                         }
                     }
