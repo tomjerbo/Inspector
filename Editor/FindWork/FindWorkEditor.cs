@@ -90,7 +90,7 @@ public class FindWorkEditor : Editor {
         EditorGUI.DrawRect(highlight.trim_top(rect_name.height + Styles.spacing + 2), (is_marked_completed ? Styles.green : Styles.blue) * 0.35f);
         EditorGUI.DrawRect(highlight.trim_bottom(rect_full.height - (rect_name.height + Styles.spacing) + 2), (is_marked_completed ? Styles.green : Styles.blue) * 0.5f);
         
-        // TODO separate obj and comp+field name, obj in grey from right side
+        
         draw_name(rect_name, ref work_ref);
         draw_progress(rect_progress, ref work_ref);
         
@@ -135,9 +135,15 @@ public class FindWorkEditor : Editor {
     }
     
     void draw_name(Rect rect, ref FindWork.Work_Reference work_ref) {
-        if (GUI.Button(rect, $"{work_ref.on_object.name} -> {work_ref.on_component.GetType().Name}.{work_ref.field_name}", Styles.label_left)) {
+
+        GUI.contentColor = (work_ref.work_status == completed ? Styles.green : Styles.blue) * 0.6f;
+        if (GUI.Button(rect, $"{work_ref.on_component.GetType().Name}.{work_ref.field_name}", Styles.label_left)) {
             EditorGUIUtility.PingObject(work_ref.on_component);
         }
+        
+        GUI.contentColor = Styles.grey;
+        GUI.Label(rect, $"{work_ref.on_object.name}", Styles.label_right);
+        GUI.contentColor = Color.white;
     }
 
     void draw_info_text(Rect rect, ref FindWork.Work_Reference work_ref) {
@@ -202,6 +208,10 @@ public class FindWorkEditor : Editor {
         
         public static readonly GUIStyle label_left = new (label) {
             alignment = TextAnchor.MiddleLeft,
+        };
+        
+        public static readonly GUIStyle label_right = new (label) {
+            alignment = TextAnchor.MiddleRight,
         };
     }
 
