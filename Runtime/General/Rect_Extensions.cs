@@ -62,6 +62,20 @@ public static class Rect_Extensions {
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Rect trim_horizontal(this Rect rect, float amount) {
+        rect.x += amount * 0.5f;
+        rect.width -= amount;
+        return rect;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Rect trim_vertical(this Rect rect, float amount) {
+        rect.y += amount * 0.5f;
+        rect.height -= amount;
+        return rect;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rect trim_left(this Rect rect, float amount) {
         rect.x += amount;
         rect.width -= amount;
@@ -107,9 +121,26 @@ public static class Rect_Extensions {
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Rect split_even_horizontal(this Rect rect, int splits, float spacing) {
-        rect.width = (rect.width / splits) - spacing;
-        return rect;
+    public static Rect[] split_even_horizontal(this Rect rect, int splits, float spacing) {
+        float[] split_size = new float[splits];
+        float size = 1.0f / splits;
+        for (int idx = 0; idx < splits; idx++) {
+            split_size[idx] = size;
+        }
+
+        return split_horizontal_custom(rect, spacing, split_size);
+    }
+    
+    // Not Tested
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Rect[] split_even_vertical(this Rect rect, int splits, float spacing) {
+        float[] split_size = new float[splits];
+        float size = 1.0f / splits;
+        for (int idx = 0; idx < splits; idx++) {
+            split_size[idx] = size;
+        }
+
+        return split_vertical_custom(rect, spacing, split_size);
     }
 
 
@@ -137,7 +168,7 @@ public static class Rect_Extensions {
                 split = split.trim_left(spacing * 0.5f);
             }
             else {
-                split = split.reduce_x(spacing);
+                split = split.trim_horizontal(spacing);
             }
             
             result_rects[idx] = split;
@@ -170,7 +201,7 @@ public static class Rect_Extensions {
                 split = split.trim_top(spacing * 0.5f);
             }
             else {
-                split = split.trim_top(spacing * 0.5f).trim_bottom(spacing * 0.5f);
+                split = split.trim_vertical(spacing);
             }
             
             result_rects[idx] = split;
