@@ -9,24 +9,10 @@ using Object = UnityEngine.Object;
 using static FindWork.Field_Type;
 
 
-/*
- * TODO
- * find recursive through all structures?
- * set values on fields
- * add support for undo
- * 
- */
 
 
 
-public class Work<T> : MonoBehaviour {
-    [SerializeField] public Object type_to_find;
-    public Type work_type_object => typeof(T);
-    public Type work_type_array => typeof(T[]);
-    public Type work_type_list => typeof(List<T>);
-}
-
-public class FindWork : Work<ScriptableObject> {
+public class FindWork : MonoBehaviour {
     const BindingFlags binding_flags = BindingFlags.Default |
                                        BindingFlags.DeclaredOnly |
                                        BindingFlags.Public |
@@ -36,6 +22,10 @@ public class FindWork : Work<ScriptableObject> {
                                        BindingFlags.InvokeMethod;
 
     const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVXYZ";
+    
+    // TODO not sure if being able to select different types to look for is nice to have or not
+    [SerializeField] public ScriptableObject work_type;
+    [SerializeField, ReadOnly] public string type_name; // TODO remove
     
     [SerializeField] public Work_Status display_setting;
     [SerializeField] public List<Work_Reference> references = new (32);
@@ -53,6 +43,7 @@ public class FindWork : Work<ScriptableObject> {
         public string field_name;
         public int event_index;
 
+        public Type work_type;
         public bool exists;
         public bool was_removed;
         public bool was_restored_from_cache;
@@ -83,8 +74,6 @@ public class FindWork : Work<ScriptableObject> {
 
 
 
-
-
     [Button]
     public void find_refs() {
         /*
@@ -97,14 +86,40 @@ public class FindWork : Work<ScriptableObject> {
          */
         
         // gets marked as existing inside 'has_seen'
-        for (int idx = 0; idx < references.Count; idx++) {
-            references[idx].exists = false;
+        for (int idx = references.Count - 1; idx >= 0; idx--) {
+            if (references[idx].work_type != work_type.GetType()) {
+                references.RemoveAt(idx);
+            }
+            else {
+                references[idx].exists = false;
+            }
         }
         
         children_to_search.Enqueue(transform);
         do {
             Transform scan_target = children_to_search.Dequeue();
-            scan_object(scan_target, work_type_object, work_type_array, work_type_list);
+            Type single_type = work_type.GetType();
+            Type array_type = single_type.MakeArrayType();
+            Type list_type = typeof(List<>).MakeGenericType(single_type);
+            type_name = single_type.Name;
+            
+            
+            /*
+             * TODO recurse through all types as well?
+             * when should we stop?
+             * ex. you are trying to find Epic_SO
+             * class Cutscene_Event      // nested inside custom class/struct
+             * {
+             *      Epic_SO data;                     
+             *      float go_next_timer = 1.5f;
+             * }
+             * class Game_Cutscene      // nested down 2 levels, not unlikely for something like a cutscene setup
+             * {
+             *      List<Cutscene_Event> events_in_cutscene;
+             * }
+             */
+            
+            scan_object(scan_target, single_type, array_type, list_type);
             append_children_without_component(children_to_search, scan_target, GetType());
         } while (children_to_search.Count > 0);
         
@@ -160,7 +175,7 @@ public class FindWork : Work<ScriptableObject> {
     }
 
 
-    void add_reference(Transform target, Component comp, FieldInfo info, Field_Type field_type, int event_index) {
+    void add_reference(Transform target, Component comp, FieldInfo info, Field_Type field_type, Type target_type, int event_index) {
         if (has_seen(target, comp, info, field_type, event_index) == false) {
             references.Add(new Work_Reference() {
                 on_object = target,
@@ -168,7 +183,8 @@ public class FindWork : Work<ScriptableObject> {
                 field_name = $"{info.Name}",
                 field_type = field_type,
                 event_index = event_index,
-                exists = false,
+                exists = true,
+                work_type = target_type, 
             });
         }
     }
@@ -191,13 +207,13 @@ public class FindWork : Work<ScriptableObject> {
                 }
 
                 if (field_info.FieldType == object_type) {
-                    add_reference(target, comp, field_info, field, 0);
+                    add_reference(target, comp, field_info, field, object_type, 0);
                 }
                 else if (field_info.FieldType == array_type) {
-                    add_reference(target, comp, field_info, array, 0);
+                    add_reference(target, comp, field_info, array, object_type,0);
                 }
                 else if (field_info.FieldType == list_type) {
-                    add_reference(target, comp, field_info, list, 0);
+                    add_reference(target, comp, field_info, list, object_type,0);
                 }
                 else if (field_info.FieldType == typeof(UnityEvent)) {
                     
@@ -226,8 +242,8 @@ public class FindWork : Work<ScriptableObject> {
                         }
                         
                         
-                        if (target_value.GetType() == work_type_object) {
-                            add_reference(target, comp, field_info, unity_event_target, idx);
+                        if (target_value.GetType() == object_type) {
+                            add_reference(target, comp, field_info, unity_event_target, object_type, idx);
                         }
                         else {
                             // look at targets method input type
@@ -237,8 +253,8 @@ public class FindWork : Work<ScriptableObject> {
                                 MethodInfo target_method = target_value.GetType().GetMethod(method_name, binding_flags);
                                 ParameterInfo[] parameters = target_method.GetParameters();
                                 
-                                if (parameters.Length == 1 && parameters[0].ParameterType == work_type_object) {
-                                    add_reference(target, comp, field_info, unity_event_value, idx);
+                                if (parameters.Length == 1 && parameters[0].ParameterType == object_type) {
+                                    add_reference(target, comp, field_info, unity_event_value, object_type, idx);
                                 }
                             }
                         }

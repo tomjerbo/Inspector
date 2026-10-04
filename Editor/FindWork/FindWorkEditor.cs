@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 using static FindWork.Work_Status;
@@ -10,9 +11,9 @@ public class FindWorkEditor : Editor {
     static readonly GUIContent work_in_progress_text = new ("In Progress");
     static readonly GUIContent work_completed_text   = new ("Completed");
     static readonly GUIContent work_all_text         = new ("Everything");
-    static readonly GUIContent find_references_text  = new ("Find References");
-
-
+    static readonly StringBuilder string_builder = new (256);
+    GUIContent find_references_text;
+    
     bool bg_is_default_color = true; // avoid a few deep calls into GUI to set/check color
     bool gui_enabled_state = true;   // avoid a few deep calls into GUI to set/check state
     FindWork find_work;
@@ -22,13 +23,21 @@ public class FindWorkEditor : Editor {
         if (find_work == null) {
             return;
         }
-
-        find_work.find_refs();
-    }
-    
-    
-    public override void OnInspectorGUI() {
         
+        // TODO remove
+        find_work.find_refs();
+        update_type_name();
+    }
+
+    void update_type_name() {
+        string_builder.Clear();
+        string_builder.Append("Find ");
+        string_builder.Append(find_work.type_name);
+        find_references_text = new GUIContent(string_builder.ToString());
+    }
+
+
+    public override void OnInspectorGUI() {
         base.OnInspectorGUI();
         
         if (find_work == null) {
@@ -44,9 +53,10 @@ public class FindWorkEditor : Editor {
         // TODO add support for undo
         draw_buttons();
         EditorGUILayout.Space(12);
-        
+
+        Type work_type = find_work.work_type.GetType();
         for (int idx = 0; idx < find_work.references.Count; idx++) {
-            draw_work_fields(find_work.references[idx]);
+            draw_work_fields(find_work.references[idx], work_type);
         }
     }
 
@@ -54,25 +64,26 @@ public class FindWorkEditor : Editor {
         int num_buttons = 3;
         float button_height = 28;
         
-        Rect button_field_rect = EditorGUILayout.GetControlRect(false, button_height);
-        Rect[] button_rects = button_field_rect.split_even_horizontal(num_buttons, Styles.spacing);
-        Rect button_find_refs_rect = EditorGUILayout.GetControlRect(false, button_height);
+        Rect work_status_area       = EditorGUILayout.GetControlRect(false, button_height);
+        Rect find_ref_button        = EditorGUILayout.GetControlRect(false, button_height);
+        Rect[] work_status_buttons  = work_status_area.split_even_horizontal(num_buttons, Styles.spacing);
         
-        draw_find_refs(button_find_refs_rect);
-        draw_work_all(button_rects[0]);
-        draw_work_completed(button_rects[1]);
-        draw_work_in_progress(button_rects[2]);
+        draw_find_refs(find_ref_button);
+        draw_work_all(work_status_buttons[0]);
+        draw_work_completed(work_status_buttons[1]);
+        draw_work_in_progress(work_status_buttons[2]);
     }
     
     
-    void draw_work_fields(FindWork.Work_Reference work_ref) {
-        if (work_ref.was_removed || (find_work.display_setting != all && find_work.display_setting != work_ref.work_status)) {
+    void draw_work_fields(FindWork.Work_Reference work_ref, Type work_type) {
+        // work_ref.was_removed || 
+        if ((find_work.display_setting != all && find_work.display_setting != work_ref.work_status)) {
             return;
         }
         
-        float full_element_height = 86;
-        float padding_between_elements = 8;
-        bool is_marked_completed = work_ref.work_status == completed;
+        float full_element_height       = 86;
+        float padding_between_elements  = 8;
+        bool is_marked_completed        = work_ref.work_status == completed;
         
         Rect rect_full              = EditorGUILayout.GetControlRect(false, full_element_height + padding_between_elements);
         rect_full                   = rect_full.trim_top(padding_between_elements);
@@ -86,26 +97,29 @@ public class FindWorkEditor : Editor {
         Rect rect_progress  = progress_and_object[0];
 
         if (work_ref.was_restored_from_cache) {
-            EditorGUI.DrawRect(rect_full.reduce(-3), Color.yellowNice);
-            EditorGUI.DrawRect(rect_full.reduce(-2), new Color(0.22f,0.22f,0.22f));
+            EditorGUI.DrawRect(rect_full.reduce(-4), Color.yellowNice * 0.7f);
+            EditorGUI.DrawRect(rect_full.reduce(-3), new Color(0.22f,0.22f,0.22f));
+        }
+        else if (work_ref.was_removed) {
+            EditorGUI.DrawRect(rect_full.reduce(-4), Color.softRed * 0.8f);
+            EditorGUI.DrawRect(rect_full.reduce(-3), new Color(0.22f,0.22f,0.22f));
         }
         
-
         draw_highlight(ref rect_full, rect_name.height, is_marked_completed);
         draw_name(rect_name, ref work_ref);
         draw_progress(rect_progress, ref work_ref);
         
         disable_gui_if(is_marked_completed);
         draw_info_text(rect_info, ref work_ref);
-        draw_object_field(rect_object, find_work.work_type_object, ref work_ref);
+        draw_object_field(rect_object, work_type, ref work_ref);
         set_gui_on();
 
     }
 
     void draw_highlight(ref Rect rect_full, float name_rect_height, bool is_marked_completed) {
-        Rect highlight_rect = rect_full.extend_left(8);
-        highlight_rect.width = 2;
-        float highlight_spacing = 2f;
+        Rect highlight_rect      = rect_full.extend_left(8);
+        highlight_rect.width     = 2;
+        float highlight_spacing  = 2f;
         
         Color color = is_marked_completed ? Styles.green : Styles.blue;
         EditorGUI.DrawRect(highlight_rect.trim_top(name_rect_height + Styles.spacing + highlight_spacing), color * 0.35f);
@@ -117,6 +131,7 @@ public class FindWorkEditor : Editor {
         set_bg_color(Styles.grey);
         if (GUI.Button(rect, find_references_text)) {
             find_work.find_refs();
+            update_type_name();
         }
     }
 
@@ -130,8 +145,6 @@ public class FindWorkEditor : Editor {
 
     void draw_work_in_progress(Rect rect) {
         set_bg_color(find_work.display_setting == in_progress ? Styles.blue : Styles.grey);
-        set_bg_color_if(Styles.blue, find_work.display_setting == in_progress);
-        set_bg_color_if(Styles.grey, find_work.display_setting != in_progress);
         if (GUI.Button(rect, work_in_progress_text)) {
             find_work.display_setting = in_progress;
         }
@@ -147,14 +160,26 @@ public class FindWorkEditor : Editor {
     }
     
     void draw_name(Rect rect, ref FindWork.Work_Reference work_ref) {
-
+        
+        string_builder.Clear();
+        string_builder.Append(work_ref.on_component.GetType().Name);
+        string_builder.Append(" -> ");
+        string_builder.Append(work_ref.field_name);
+        
+        if (work_ref.field_type == FindWork.Field_Type.unity_event_target ||
+            work_ref.field_type == FindWork.Field_Type.unity_event_value) {
+            string_builder.Append(" (");
+            string_builder.Append(work_ref.event_index);
+            string_builder.Append(")");
+        }
+        
         GUI.contentColor = (work_ref.work_status == completed ? Styles.green : Styles.blue) * 0.6f;
-        if (GUI.Button(rect, $"{work_ref.on_component.GetType().Name}.{work_ref.field_name}", Styles.label_left)) {
+        if (GUI.Button(rect, string_builder.ToString(), Styles.label_left)) {
             EditorGUIUtility.PingObject(work_ref.on_component);
         }
         
         GUI.contentColor = Styles.grey;
-        GUI.Label(rect, $"{work_ref.on_object.name}", Styles.label_right);
+        GUI.Label(rect, work_ref.on_object.name, Styles.label_right);
         GUI.contentColor = Color.white;
     }
 
@@ -171,17 +196,15 @@ public class FindWorkEditor : Editor {
     
     void draw_progress(Rect rect, ref FindWork.Work_Reference work_ref) {
         bool is_marked_complete = work_ref.work_status == completed;
-        set_bg_color_if(Styles.green, is_marked_complete);
-        set_bg_color_if(Styles.blue, is_marked_complete == false);
+        set_bg_color(is_marked_complete ? Styles.green : Styles.blue);
         if (GUI.Button(rect, is_marked_complete ? work_completed_text : work_in_progress_text)) {
             work_ref.work_status = is_marked_complete ? in_progress : completed;
         }
         set_bg_white();
-        
     }
 
     static int color_index;
-    void display_rects(Rect[] rects) {
+    void display_rects(params Rect[] rects) {
         float color_scale = 0.67f;
         for (int idx = 0; idx < rects.Length; idx++) {
             float r = Mathf.Abs(Mathf.Sin(color_index++ * color_scale));
