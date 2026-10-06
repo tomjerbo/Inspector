@@ -180,9 +180,9 @@ public class FindWorkEditor : Editor {
         string_builder.Append(work_ref.field_name);
         
         if (work_ref.field_type != Field_Type.field) {
-            string_builder.Append(" (");
+            string_builder.Append("[");
             string_builder.Append(work_ref.event_index);
-            string_builder.Append(")");
+            string_builder.Append("]");
         }
         
         GUI.contentColor = (work_ref.work_status == completed ? Styles.green : Styles.blue) * 0.6f;
