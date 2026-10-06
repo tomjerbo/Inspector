@@ -13,7 +13,7 @@ using static FindWork.Field_Type;
 
 
 public class FindWork : MonoBehaviour {
-    const BindingFlags binding_flags = BindingFlags.Default |
+    public const BindingFlags binding_flags = BindingFlags.Default |
                                        BindingFlags.DeclaredOnly |
                                        BindingFlags.Public |
                                        BindingFlags.Static |
@@ -254,6 +254,7 @@ public class FindWork : MonoBehaviour {
                                 ParameterInfo[] parameters = target_method.GetParameters();
                                 
                                 if (parameters.Length == 1 && parameters[0].ParameterType == object_type) {
+                                    // Debug.Log($"{field_info.Name}: hashcode {target_method.GetHashCode()}, tokenid: {target_method.MetadataToken}, handle: {target_method}");
                                     add_reference(target, comp, field_info, unity_event_value, object_type, idx);
                                 }
                             }

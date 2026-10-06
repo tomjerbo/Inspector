@@ -1,9 +1,14 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Events;
 using static FindWork.Work_Status;
+using Object = UnityEngine.Object;
 
 [CustomEditor(typeof(FindWork))]
 public class FindWorkEditor : Editor {
@@ -76,7 +81,7 @@ public class FindWorkEditor : Editor {
     
     
     void draw_work_fields(FindWork.Work_Reference work_ref, Type work_type) {
-        // work_ref.was_removed || 
+    // work_ref.was_removed || 
         if ((find_work.display_setting != all && find_work.display_setting != work_ref.work_status)) {
             return;
         }
@@ -191,7 +196,122 @@ public class FindWorkEditor : Editor {
 
     void draw_object_field(Rect rect, Type object_type, ref FindWork.Work_Reference work_ref) {
         // TODO find and set value
-        EditorGUI.ObjectField(rect, null, object_type, false);
+        Object active_value = get_field_value(ref work_ref);
+        Object result = EditorGUI.ObjectField(rect, active_value, object_type, false);
+        if (active_value != result) {
+            Undo.RecordObject(work_ref.on_component, "Changed field value");
+            set_field_value(ref work_ref, result);
+        }
+    }
+
+    FieldInfo get_field(ref FindWork.Work_Reference work_ref) {
+        switch (work_ref.field_type) {
+            case FindWork.Field_Type.field: {
+                FieldInfo field = work_ref.on_component.GetType().GetField(work_ref.field_name, FindWork.binding_flags);
+                return field;
+            }
+            case FindWork.Field_Type.array: {
+                
+                break;
+            }
+            case FindWork.Field_Type.list:{
+                
+                break;
+            }
+            case FindWork.Field_Type.unity_event_target:{
+                
+                break;
+            }
+            case FindWork.Field_Type.unity_event_value:{
+                
+                break;
+            }
+            default: throw new ArgumentOutOfRangeException();
+        }
+
+        return null;
+    }
+    
+    
+    void set_field_value(ref FindWork.Work_Reference work_ref, Object value) {
+        switch (work_ref.field_type) {
+            case FindWork.Field_Type.field:
+            {
+                FieldInfo field = work_ref.on_component.GetType().GetField(work_ref.field_name, FindWork.binding_flags);
+                field.SetValue(work_ref.on_component, value);
+                break;
+            }
+            case FindWork.Field_Type.array:
+                break;
+            case FindWork.Field_Type.list:
+                break;
+            case FindWork.Field_Type.unity_event_target:
+                break;
+            case FindWork.Field_Type.unity_event_value:
+                break;
+            default: throw new ArgumentOutOfRangeException();
+        }
+    }
+
+    Object get_field_value(ref FindWork.Work_Reference work_ref) {
+        switch (work_ref.field_type) {
+            case FindWork.Field_Type.field: {
+                FieldInfo field = work_ref.on_component.GetType().GetField(work_ref.field_name, FindWork.binding_flags);
+                return (Object)field.GetValue(work_ref.on_component);
+            }
+            
+            case FindWork.Field_Type.array:
+                break;
+            case FindWork.Field_Type.list:
+                break;
+            case FindWork.Field_Type.unity_event_target: {
+                FieldInfo field = work_ref.on_component.GetType().GetField(work_ref.field_name, FindWork.binding_flags);
+                UnityEventBase unity_event_base = (UnityEventBase)field.GetValue(work_ref.on_component);
+                
+                // if it's an UnityEventBase then these fields will always exist!
+                FieldInfo persistent_calls_field = typeof(UnityEventBase).GetField("m_PersistentCalls", FindWork.binding_flags);
+                object persistent_calls_value = persistent_calls_field.GetValue(unity_event_base);
+                
+                FieldInfo calls_info = persistent_calls_value.GetType().GetField("m_Calls", FindWork.binding_flags);
+                IList calls_value = (IList)calls_info.GetValue(persistent_calls_value);
+
+                object element = calls_value[work_ref.event_index];
+                Type element_type = element.GetType();
+                
+                FieldInfo target_info = element_type.GetField("m_Target", FindWork.binding_flags);
+                return (Object)target_info.GetValue(element);
+                // Object target_value = (Object)target_info.GetValue(element);
+                // if (target_value == null) {
+                //     continue;
+                // }
+                //
+                //
+                // if (target_value.GetType() == object_type) {
+                //     add_reference(target, comp, field_info, unity_event_target, object_type, idx);
+                // }
+                // else {
+                //     // look at targets method input type
+                //     FieldInfo target_method_name_field = element_type.GetField("m_MethodName", FindWork.binding_flags);
+                //     string method_name = (string)target_method_name_field.GetValue(element);
+                //     if (string.IsNullOrEmpty(method_name) == false) {
+                //         MethodInfo target_method = target_value.GetType().GetMethod(method_name, binding_flags);
+                //         ParameterInfo[] parameters = target_method.GetParameters();
+                //         
+                //         if (parameters.Length == 1 && parameters[0].ParameterType == object_type) {
+                //             // Debug.Log($"{field_info.Name}: hashcode {target_method.GetHashCode()}, tokenid: {target_method.MetadataToken}, handle: {target_method}");
+                //             add_reference(target, comp, field_info, unity_event_value, object_type, idx);
+                //         }
+                //     }
+                // }
+                // return (Object)field.GetValue(work_ref.on_component);
+            }
+            case FindWork.Field_Type.unity_event_value:
+                
+                break;
+            default: throw new ArgumentOutOfRangeException();
+        }
+
+        return null;
     }
     
     void draw_progress(Rect rect, ref FindWork.Work_Reference work_ref) {
