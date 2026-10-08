@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Jerbo.Inspector;
 using UnityEngine;
 
 
@@ -8,9 +7,7 @@ public class FindWork : MonoBehaviour {
     const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVXYZ";
     
     // TODO not sure if being able to select different types to look for is nice to have or not
-    [SerializeField] public ScriptableObject work_type;
-    [SerializeField, ReadOnly] public string type_name; // TODO remove
-    
+    [SerializeField] public Work_Type work_type;
     [SerializeField] public Work_Status display_setting;
     [SerializeField] public List<Work_Reference> references = new (32);
 
@@ -24,8 +21,8 @@ public class FindWork : MonoBehaviour {
 
         public Type work_type;
         public bool exists;
-        public bool was_removed;
-        public bool was_restored_from_cache;
+        // public bool was_removed;
+        // public bool was_restored_from_cache;
         public Work_Status work_status;
         public string description;
     }
@@ -44,6 +41,18 @@ public class FindWork : MonoBehaviour {
         unity_event_value,
     }
 
+    public static readonly string[] work_type_names = Enum.GetNames(typeof(Work_Type));
+    public Type get_work_type => types_of_work_refs[(int)work_type];
+
+    static readonly Type[] types_of_work_refs = {
+        typeof(TestSO),
+        typeof(ScriptableObject),
+    };
+    
+    public enum Work_Type {
+        TestSO,
+        ScriptableObject,
+    }
     
     [ContextMenu("Name children")]
     void name_all_children() {
