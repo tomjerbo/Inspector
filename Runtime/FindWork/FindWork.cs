@@ -16,7 +16,7 @@ public class FindWork : MonoBehaviour {
         public Transform on_object;
         public Component on_component;
         public Field_Type field_type;
-        public string field_name;
+        public string field_name = string.Empty;
         public int event_index;
 
         public Type work_type;
@@ -24,7 +24,7 @@ public class FindWork : MonoBehaviour {
         // public bool was_removed;
         // public bool was_restored_from_cache;
         public Work_Status work_status;
-        public string description;
+        public string description = string.Empty;
     }
     
     public enum Work_Status {

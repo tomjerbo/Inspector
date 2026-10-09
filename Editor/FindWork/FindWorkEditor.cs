@@ -25,7 +25,6 @@ public class FindWorkEditor : Editor {
     static readonly GUIContent work_completed_text   = new ("Completed");
     static readonly GUIContent work_all_text         = new ("Everything");
     static readonly StringBuilder string_builder = new (256);
-    GUIContent find_references_text;
     
     bool bg_is_default_color = true; // avoid a few deep calls into GUI to set/check color
     bool gui_enabled_state = true;   // avoid a few deep calls into GUI to set/check state
@@ -38,19 +37,9 @@ public class FindWorkEditor : Editor {
         }
         
         find_refs(ref find_work.references, find_work.get_work_type, find_work.transform);
-        update_type_name();
     }
-
-    void update_type_name() {
-        string_builder.Clear();
-        string_builder.Append("Find ");
-        string_builder.Append(find_work.get_work_type.Name);
-        find_references_text = new GUIContent(string_builder.ToString());
-    }
-
 
     public override void OnInspectorGUI() {
-        
         if (find_work == null) {
             base.OnInspectorGUI();
             return;
@@ -62,7 +51,6 @@ public class FindWorkEditor : Editor {
         color_index          = 0;
         
         
-        // TODO add support for undo
         draw_buttons(ref find_work);
         EditorGUILayout.Space(12);
 
@@ -75,28 +63,41 @@ public class FindWorkEditor : Editor {
     void draw_buttons(ref FindWork work_ref) {
         int num_buttons      = 3;
         float button_height  = 28;
-        float type_height    = 24;
         
-        Rect type_selection         = EditorGUILayout.GetControlRect(false, type_height);
+        // Rect type_selection         = EditorGUILayout.GetControlRect(false, type_height);
         Rect work_status_area       = EditorGUILayout.GetControlRect(false, button_height);
-        Rect ref_and_dropdown       = EditorGUILayout.GetControlRect(false, button_height);
+        Rect find_ref_and_type      = EditorGUILayout.GetControlRect(false, button_height);
         Rect[] work_status_buttons  = work_status_area.split_even_horizontal(num_buttons, Styles.spacing);
+        Rect[] ref_and_type         = find_ref_and_type.split_horizontal_custom(Styles.spacing, 0.5f, 0.5f);
         
         draw_work_all(work_status_buttons[0]);
         draw_work_in_progress(work_status_buttons[1]);
         draw_work_completed(work_status_buttons[2]);
-        draw_find_refs(ref_and_dropdown);
-        draw_work_type_dropdown(type_selection, ref work_ref);
+        draw_find_refs(ref_and_type[0]);
+        draw_work_type_dropdown(ref_and_type[1], ref work_ref);
     }
     
     void draw_work_type_dropdown(Rect rect, ref FindWork work_ref) {
-        // TODO make it look better, and stop accidental change / undo
-        FindWork.Work_Type selected = (FindWork.Work_Type)EditorGUI.Popup(rect, (int)work_ref.work_type, FindWork.work_type_names, Styles.label_center);
+        FindWork.Work_Type selected = (FindWork.Work_Type)EditorGUI.Popup(rect, (int)work_ref.work_type, FindWork.work_type_names, Styles.popup_center);
 
         if (work_ref.work_type != selected) {
-            work_ref.work_type = selected;
-            find_refs(ref find_work.references, find_work.get_work_type, find_work.transform);
+            if (has_no_data_changes(ref work_ref) || EditorUtility.DisplayDialog("Are you sure?", "Changing the work type will remove any existing data", "ok", "cancel"))
+            {
+                Undo.RecordObject(work_ref, "Changed type of work");
+                work_ref.work_type = selected;
+                find_refs(ref find_work.references, find_work.get_work_type, find_work.transform);
+            }
         }
+    }
+
+    bool has_no_data_changes(ref FindWork work_ref) {
+        foreach (FindWork.Work_Reference work in work_ref.references) {
+            if (work.description.Length != 0 || work.work_status != in_progress) {
+                return false;
+            }
+        }
+
+        return true;
     }
     
     void draw_work_fields(FindWork.Work_Reference work_ref, Type work_type) {
@@ -138,7 +139,7 @@ public class FindWorkEditor : Editor {
         //     extra_height = 320;
         // rect_info.y += extra_height;
         disable_gui_if(is_marked_completed);
-        draw_info_text(rect_info, ref work_ref);
+        draw_description_text(rect_info, ref work_ref);
         draw_object_field(rect_object, work_type, ref work_ref);
         set_gui_on();
         
@@ -160,15 +161,16 @@ public class FindWorkEditor : Editor {
 
     void draw_find_refs(Rect rect) {
         set_bg_color(Styles.grey);
-        if (GUI.Button(rect, find_references_text)) {
+        if (GUI.Button(rect, "Find Work")) {
+            Undo.RecordObject(find_work, "Find work references");
             find_refs(ref find_work.references, find_work.get_work_type, find_work.transform);
-            update_type_name();
         }
     }
 
     void draw_work_all(Rect rect) {
         set_bg_color(find_work.display_setting == all ? Styles.green : Styles.grey);
         if (GUI.Button(rect, work_all_text)) {
+            Undo.RecordObject(find_work, "Display all work");
             find_work.display_setting = all;
         }
         set_bg_white();
@@ -177,6 +179,7 @@ public class FindWorkEditor : Editor {
     void draw_work_in_progress(Rect rect) {
         set_bg_color(find_work.display_setting == in_progress ? Styles.blue : Styles.grey);
         if (GUI.Button(rect, work_in_progress_text)) {
+            Undo.RecordObject(find_work, "Display in progress work");
             find_work.display_setting = in_progress;
         }
         set_bg_white();
@@ -185,13 +188,13 @@ public class FindWorkEditor : Editor {
     void draw_work_completed(Rect rect) {
         set_bg_color(find_work.display_setting == completed ? Styles.blue : Styles.grey);
         if (GUI.Button(rect, work_completed_text)) {
+            Undo.RecordObject(find_work, "Display completed work");
             find_work.display_setting = completed;
         }
         set_bg_white();
     }
     
     void draw_name(Rect rect, ref FindWork.Work_Reference work_ref) {
-        
         string_builder.Clear();
         string_builder.Append(work_ref.on_component.GetType().Name);
         string_builder.Append(" -> ");
@@ -213,9 +216,13 @@ public class FindWorkEditor : Editor {
         GUI.contentColor = Color.white;
     }
 
-    void draw_info_text(Rect rect, ref FindWork.Work_Reference work_ref) {
+    void draw_description_text(Rect rect, ref FindWork.Work_Reference work_ref) {
         GUI.skin.textField.wordWrap = true;
-        work_ref.description = EditorGUI.TextField(rect, work_ref.description);
+        string description_text = EditorGUI.TextField(rect, work_ref.description);
+        if (work_ref.description.Length != description_text.Length || string.CompareOrdinal(work_ref.description, description_text) != 0) {
+            Undo.RecordObject(find_work, "Change work description");
+            work_ref.description = description_text;
+        }
         GUI.skin.textField.wordWrap = false;
     }
 
@@ -230,7 +237,7 @@ public class FindWorkEditor : Editor {
         Object active_value = get_value(ref work_ref);
         Object result = EditorGUI.ObjectField(rect, active_value, object_type, false);
         if (active_value != result) {
-            Undo.RecordObject(work_ref.on_component, "Changed field value");
+            Undo.RecordObject(work_ref.on_component, "Changed work value");
             set_value(ref work_ref, result);
         }
     }
@@ -426,6 +433,7 @@ public class FindWorkEditor : Editor {
         bool is_marked_complete = work_ref.work_status == completed;
         set_bg_color(is_marked_complete ? Styles.green : Styles.blue);
         if (GUI.Button(rect, is_marked_complete ? work_completed_text : work_in_progress_text)) {
+            Undo.RecordObject(find_work, "Change work status");
             work_ref.work_status = is_marked_complete ? in_progress : completed;
         }
         set_bg_white();
@@ -475,6 +483,14 @@ public class FindWorkEditor : Editor {
         
         public static readonly GUIStyle label_right = new (label) {
             alignment = TextAnchor.MiddleRight,
+        };
+        
+        public static readonly GUIStyle popup_center = new (EditorStyles.popup) {
+            alignment = TextAnchor.MiddleCenter,
+            fontSize = 14,
+            contentOffset = new Vector2(0, -1),
+            fixedHeight = 0,
+            stretchHeight = true,
         };
     }
 
