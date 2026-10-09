@@ -64,7 +64,6 @@ public class FindWorkEditor : Editor {
         int num_buttons      = 3;
         float button_height  = 28;
         
-        // Rect type_selection         = EditorGUILayout.GetControlRect(false, type_height);
         Rect work_status_area       = EditorGUILayout.GetControlRect(false, button_height);
         Rect find_ref_and_type      = EditorGUILayout.GetControlRect(false, button_height);
         Rect[] work_status_buttons  = work_status_area.split_even_horizontal(num_buttons, Styles.spacing);
@@ -114,38 +113,19 @@ public class FindWorkEditor : Editor {
         Rect[] vertical_group       = rect_full.split_vertical_custom(Styles.spacing, 0.22f, 0.28f, 0.5f);
         Rect[] progress_and_object  = vertical_group[1].split_horizontal_custom(Styles.spacing, 0.2f, 0.8f);
         
-        
         Rect rect_name      = vertical_group[0];
         Rect rect_object    = progress_and_object[1];
         Rect rect_info      = vertical_group[2];
         Rect rect_progress  = progress_and_object[0];
-
-        // if (work_ref.was_restored_from_cache) {
-        //     EditorGUI.DrawRect(rect_full.reduce(-4), Color.yellowNice * 0.7f);
-        //     EditorGUI.DrawRect(rect_full.reduce(-3), new Color(0.22f,0.22f,0.22f));
-        // }
-        // else if (work_ref.was_removed) {
-        //     EditorGUI.DrawRect(rect_full.reduce(-4), Color.softRed * 0.8f);
-        //     EditorGUI.DrawRect(rect_full.reduce(-3), new Color(0.22f,0.22f,0.22f));
-        // }
         
         draw_highlight(ref rect_full, rect_name.height, is_marked_completed);
         draw_name(rect_name, ref work_ref);
         draw_progress(rect_progress, ref work_ref);
-
-        // float extra_height = (rect_object.height + Styles.spacing) * Mathf.Max(work_ref.event_index, 0);
-        // if (work_ref.field_type != Field_Type.array && work_ref.field_type != Field_Type.list) {
-        // }
-        //     extra_height = 320;
-        // rect_info.y += extra_height;
+        
         disable_gui_if(is_marked_completed);
         draw_description_text(rect_info, ref work_ref);
         draw_object_field(rect_object, work_type, ref work_ref);
         set_gui_on();
-        
-        // rect_full.height += extra_height;
-        
-        // EditorGUILayout.Space(extra_height);
     }
 
     void draw_highlight(ref Rect rect_full, float name_rect_height, bool is_marked_completed) {
@@ -212,7 +192,7 @@ public class FindWorkEditor : Editor {
         }
         
         GUI.contentColor = Styles.grey;
-        GUI.Label(rect, work_ref.on_object.name, Styles.label_right);
+        GUI.Label(rect, work_ref.on_component.name, Styles.label_right);
         GUI.contentColor = Color.white;
     }
 
@@ -227,13 +207,6 @@ public class FindWorkEditor : Editor {
     }
 
     void draw_object_field(Rect rect, Type object_type, ref FindWork.Work_Reference work_ref) {
-        // SerializedObject ser_objs = new UnityEditor.SerializedObject(work_ref.on_component);
-        // SerializedProperty prop = ser_objs.FindProperty(work_ref.field_name);
-        // if (EditorGUI.PropertyField(rect, prop)) {
-        //     ser_objs.ApplyModifiedProperties();
-        //     prop.serializedObject.ApplyModifiedProperties();
-        // }
-
         Object active_value = get_value(ref work_ref);
         Object result = EditorGUI.ObjectField(rect, active_value, object_type, false);
         if (active_value != result) {
@@ -356,77 +329,6 @@ public class FindWorkEditor : Editor {
             
             default: throw new ArgumentOutOfRangeException();
         }
-    }
-
-    (FieldInfo field, object owner) get_field(ref FindWork.Work_Reference work_ref) {
-        switch (work_ref.field_type) {
-            case FindWork.Field_Type.field: {
-                FieldInfo field = work_ref.on_component.GetType().GetField(work_ref.field_name, binding_flags);
-                return (field, work_ref.on_component);
-            }
-            
-            case FindWork.Field_Type.array: {
-                FieldInfo field = work_ref.on_component.GetType().GetField(work_ref.field_name, binding_flags);
-                return (field, work_ref.on_component);
-                
-                    Array value_array = (Array)field.GetValue(work_ref.on_component);
-                    if (value_array != null) {
-                        for (int idx = 0; idx < value_array.Length; idx++) {
-                        }
-                    }
-                
-                    
-                break;
-            }
-            
-            case FindWork.Field_Type.list: {
-                FieldInfo field = work_ref.on_component.GetType().GetField(work_ref.field_name, binding_flags);
-                return (field, work_ref.on_component);
-                
-                IList value_list = (IList)field.GetValue(work_ref.on_component);
-                if (value_list != null) {
-                    for (int idx = 0; idx < value_list.Count; idx++) {
-                    }
-                }
-                break;
-            }
-            
-            case FindWork.Field_Type.unity_event_target:
-            case FindWork.Field_Type.unity_event_value: {
-                FieldInfo field = work_ref.on_component.GetType().GetField(work_ref.field_name, binding_flags);
-                UnityEventBase unity_event_base = (UnityEventBase)field.GetValue(work_ref.on_component);
-                
-                // if it's an UnityEventBase then these fields will always exist!
-                FieldInfo persistent_calls_field = typeof(UnityEventBase).GetField("m_PersistentCalls", binding_flags);
-                object persistent_calls_value = persistent_calls_field.GetValue(unity_event_base); // PersistentCallGroup
-                
-                FieldInfo persistent_call_list_field = persistent_calls_value.GetType().GetField("m_Calls", binding_flags);
-                IList persistent_calls_list_value = (IList)persistent_call_list_field.GetValue(persistent_calls_value); // List<PersistentCall>
-
-                object element = persistent_calls_list_value[work_ref.event_index];
-                Type persistent_call_type = element.GetType(); // PersistentCall
-                
-                if (work_ref.field_type == FindWork.Field_Type.unity_event_target) {
-                    FieldInfo target_field = persistent_call_type.GetField("m_Target", binding_flags); // UnityEngine.Object
-                    return (target_field, element);
-                }
-
-                if (work_ref.field_type == FindWork.Field_Type.unity_event_value) {
-                    FieldInfo argument_cache_field = persistent_call_type.GetField("m_Arguments", binding_flags);
-                    object argument_cache_value = argument_cache_field.GetValue(element);
-                    Type argument_cache_type = argument_cache_value.GetType(); // ArgumentCache
-                    
-                    FieldInfo object_argument_field = argument_cache_type.GetField("m_ObjectArgument", binding_flags);
-                    return (object_argument_field, argument_cache_value);
-                }
-
-                break;
-            }
-            
-            default: throw new ArgumentOutOfRangeException();
-        }
-
-        return (null, null);
     }
     
     void draw_progress(Rect rect, ref FindWork.Work_Reference work_ref) {
@@ -578,16 +480,6 @@ public class FindWorkEditor : Editor {
             if (references[idx].exists == false) {
                 references.RemoveAt(idx);
             }
-            // if (references[idx].exists == false) {
-            //     references[idx].was_removed = true;
-            //     references[idx].was_restored_from_cache = false;
-            //     continue;
-            // }
-            //
-            // if (references[idx].exists && references[idx].was_removed) {
-            //     references[idx].was_removed = false;
-            //     references[idx].was_restored_from_cache = true;
-            // }
         }
     }
     
@@ -600,11 +492,10 @@ public class FindWorkEditor : Editor {
         }
     }
     
-    bool has_seen(ref List<FindWork.Work_Reference> references, Transform on_obj, Component on_comp, FieldInfo info, FindWork.Field_Type field_type, int event_index) {
+    bool has_seen(ref List<FindWork.Work_Reference> references, Component on_comp, FieldInfo info, FindWork.Field_Type field_type, int event_index) {
         for (int idx = 0; idx < references.Count; idx++) {
             if (references[idx].on_component == on_comp 
                 && string.CompareOrdinal(info.Name, references[idx].field_name) == 0
-                && references[idx].on_object == on_obj
                 && references[idx].event_index == event_index
                 && references[idx].field_type == field_type) 
             {
@@ -619,16 +510,14 @@ public class FindWorkEditor : Editor {
     // rename target
     void add_reference(
         ref List<FindWork.Work_Reference> references, 
-        Transform target,
         Component comp,
         FieldInfo info,
         FindWork.Field_Type field_type,
         Type target_type,
         int event_index) 
     {
-        if (has_seen(ref references, target, comp, info, field_type, event_index) == false) {
+        if (has_seen(ref references, comp, info, field_type, event_index) == false) {
             references.Add(new FindWork.Work_Reference {
-                on_object = target,
                 on_component = comp,
                 field_name = $"{info.Name}",
                 field_type = field_type,
@@ -639,17 +528,16 @@ public class FindWorkEditor : Editor {
         }
     }
 
-    // rename target
     void scan_object(
         ref List<FindWork.Work_Reference> references, 
         ref HashSet<Component> visited_comps, 
         ref HashSet<FieldInfo> visited_fields, 
-        Transform target, 
+        Transform scan_target, 
         Type object_type, 
         Type array_type, 
         Type list_type) 
     {
-        Component[] all_components_on_target = target.GetComponents<Component>();
+        Component[] all_components_on_target = scan_target.GetComponents<Component>();
         foreach (Component comp in all_components_on_target) {
             if (visited_comps.Add(comp) == false) {
                 continue;
@@ -665,13 +553,13 @@ public class FindWorkEditor : Editor {
                 }
 
                 if (field_info.FieldType == object_type) {
-                    add_reference(ref references, target, comp, field_info, FindWork.Field_Type.field, object_type, 0);
+                    add_reference(ref references, comp, field_info, FindWork.Field_Type.field, object_type, 0);
                 }
                 else if (field_info.FieldType == array_type) {
                     Array value_array = (Array)field_info.GetValue(comp);
                     if (value_array != null) {
                         for (int idx = 0; idx < value_array.Length; idx++) {
-                            add_reference(ref references, target, comp, field_info, FindWork.Field_Type.array, object_type, idx);
+                            add_reference(ref references, comp, field_info, FindWork.Field_Type.array, object_type, idx);
                         }
                     }
                 }
@@ -679,7 +567,7 @@ public class FindWorkEditor : Editor {
                     IList value_list = (IList)field_info.GetValue(comp);
                     if (value_list != null) {
                         for (int idx = 0; idx < value_list.Count; idx++) {
-                            add_reference(ref references, target, comp, field_info, FindWork.Field_Type.list, object_type, idx);
+                            add_reference(ref references, comp, field_info, FindWork.Field_Type.list, object_type, idx);
                         }
                     }
                 }
@@ -709,7 +597,7 @@ public class FindWorkEditor : Editor {
                         }
                         
                         if (target_value.GetType() == object_type) {
-                            add_reference(ref references, target, comp, field_info, FindWork.Field_Type.unity_event_target, object_type, idx);
+                            add_reference(ref references, comp, field_info, FindWork.Field_Type.unity_event_target, object_type, idx);
                         }
                         else {
                             // look at targets method input type
@@ -720,7 +608,7 @@ public class FindWorkEditor : Editor {
                                 ParameterInfo[] parameters = target_method.GetParameters();
                                 
                                 if (parameters.Length == 1 && parameters[0].ParameterType == object_type) {
-                                    add_reference(ref references, target, comp, field_info, FindWork.Field_Type.unity_event_value, object_type, idx);
+                                    add_reference(ref references, comp, field_info, FindWork.Field_Type.unity_event_value, object_type, idx);
                                 }
                             }
                         }

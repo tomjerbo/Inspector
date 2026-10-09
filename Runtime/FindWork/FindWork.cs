@@ -6,14 +6,12 @@ using UnityEngine;
 public class FindWork : MonoBehaviour {
     const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVXYZ";
     
-    // TODO not sure if being able to select different types to look for is nice to have or not
     [SerializeField] public Work_Type work_type;
     [SerializeField] public Work_Status display_setting;
     [SerializeField] public List<Work_Reference> references = new (32);
 
     [Serializable]
     public class Work_Reference {
-        public Transform on_object;
         public Component on_component;
         public Field_Type field_type;
         public string field_name = string.Empty;
@@ -21,8 +19,6 @@ public class FindWork : MonoBehaviour {
 
         public Type work_type;
         public bool exists;
-        // public bool was_removed;
-        // public bool was_restored_from_cache;
         public Work_Status work_status;
         public string description = string.Empty;
     }
