@@ -352,7 +352,7 @@ public class FindWorkEditor : Editor {
         }
     }
     
-    struct Styles {
+    public struct Styles {
         public const float spacing = 3;
         public const float color_tint_adjustment = 2.0f;
 
