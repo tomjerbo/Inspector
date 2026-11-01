@@ -209,4 +209,20 @@ public static class Rect_Extensions {
         
         return result_rects;
     }
+
+
+#if UNITY_EDITOR
+    
+    // Debugging stuff
+    public static void debug_display_colored_rects(ref int color_index, params Rect[] rects) {
+        float color_scale = 0.67f;
+        for (int idx = 0; idx < rects.Length; idx++) {
+            float r = Mathf.Abs(Mathf.Sin(color_index++ * color_scale));
+            float g = Mathf.Abs(Mathf.Sin(color_index++ * color_scale));
+            float b = Mathf.Abs(Mathf.Sin(color_index++ * color_scale));
+            UnityEditor.EditorGUI.DrawRect(rects[idx], new Color(r,g,b));
+        }
+    }
+    
+#endif
 }
