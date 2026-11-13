@@ -4,7 +4,6 @@ using UnityEngine;
 
 
 public class FindWork : MonoBehaviour {
-    
     [SerializeField] public Work_Type work_type;
     [SerializeField] public Work_Status display_setting;
     [SerializeField] public List<Work_Reference> references = new (32);
@@ -14,7 +13,7 @@ public class FindWork : MonoBehaviour {
         public Component on_component;
         public string on_component_name = string.Empty;
         public string on_component_type_name = string.Empty;
-        
+
         public Field_Type field_type;
         public string field_name = string.Empty;
         public int event_index;
@@ -24,19 +23,19 @@ public class FindWork : MonoBehaviour {
         public Work_Status work_status;
         public string description = string.Empty;
     }
-    
+
     public enum Work_Status {
-        all,
-        todo,
-        done,
+        all = 0,
+        todo = 1,
+        done = 2,
     }
-    
+
     public enum Field_Type {
-        field,
-        array,
-        list,
-        unity_event_target,
-        unity_event_value,
+        field = 0,
+        array = 1,
+        list = 2,
+        unity_event_target = 3,
+        unity_event_value = 4,
     }
 
     public static readonly string[] work_type_names = Enum.GetNames(typeof(Work_Type));
@@ -48,10 +47,10 @@ public class FindWork : MonoBehaviour {
         typeof(ScriptableObject),
         typeof(ParticleSystem),
     };
-    
+
     // add - 'YourScriptableObjectTypes' for each type of work
     public enum Work_Type {
-        ScriptableObject,
-        ParticleSystem,
+        ScriptableObject = 0,
+        ParticleSystem = 1,
     }
 }
